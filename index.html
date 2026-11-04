@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Streamer</title>
+<meta name="description" content="Watch movies and series on Streamer — Android, Android TV, Windows and Mac.">
+<meta name="theme-color" content="#07080C">
+<style>
+  :root {
+    --bg: #0B1433; --surface: #141F45; --surface-hi: #1C2A57; --border: rgba(165,180,252,.15);
+    --text: #F2F5FF; --muted: #9AA6C7; --accent: #4F46E5; --accent2: #A78BFA; --gold: #F5C518;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: linear-gradient(180deg, #14224F 0%, #0B1433 55%, #080F27 100%) fixed; color: var(--text);
+    font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  .backdrop { position: fixed; inset: 0; background-size: cover; background-position: center top;
+    opacity: .35; filter: blur(2px); z-index: 0; }
+  .backdrop::after { content: ""; position: absolute; inset: 0;
+    background: linear-gradient(180deg, rgba(11,20,51,.3) 0%, var(--bg) 70%); }
+  main { position: relative; z-index: 1; max-width: 860px; margin: 0 auto; padding: 32px 16px 48px; }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 20px; letter-spacing: -.4px; }
+  .logo { width: 38px; height: 38px; border-radius: 11px; display: grid; place-items: center;
+    background: linear-gradient(135deg, var(--accent), var(--accent2)); }
+  .title-card { display: flex; gap: 24px; margin-top: 36px; align-items: flex-end; }
+  .poster { width: 180px; aspect-ratio: 2/3; border-radius: 16px; object-fit: cover; flex: none;
+    background: var(--surface-hi); box-shadow: 0 20px 50px rgba(0,0,0,.5); }
+  h1 { font-size: clamp(28px, 6vw, 44px); line-height: 1.05; letter-spacing: -1px; margin: 0 0 10px; }
+  .meta { color: #D5D8E0; font-weight: 600; display: flex; gap: 14px; flex-wrap: wrap; }
+  .star { color: var(--gold); }
+  .desc { color: #C3C7D1; margin-top: 22px; max-width: 640px; }
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    padding: 14px 22px; border-radius: 14px; font-weight: 700; text-decoration: none; color: #fff;
+    border: 1px solid var(--border); background: rgba(255,255,255,.08); }
+  .btn.primary { border: 0; background: linear-gradient(135deg, var(--accent), var(--accent2)); }
+  .actions { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 26px; }
+  h2 { font-size: 19px; margin: 44px 0 6px; letter-spacing: -.3px; }
+  .hint { color: var(--muted); font-size: 14px; margin: 0 0 16px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; }
+  .dl { display: block; padding: 16px; border-radius: 16px; background: var(--surface);
+    border: 1px solid var(--border); color: var(--text); text-decoration: none; }
+  .dl strong { display: block; }
+  .dl span { color: var(--muted); font-size: 13px; }
+  .dl.mine { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
+  footer { color: var(--muted); font-size: 12px; margin-top: 48px; }
+  @media (max-width: 560px) {
+    .title-card { flex-direction: column; align-items: flex-start; }
+    .poster { width: 140px; }
+    .actions .btn { flex: 1 1 100%; }
+  }
+</style>
+</head>
+<body>
+<div class="backdrop" id="backdrop"></div>
+<main>
+  <div class="brand"><div class="logo">▶</div>Streamer</div>
+
+  <section id="title" hidden>
+    <div class="title-card">
+      <img class="poster" id="poster" alt="">
+      <div>
+        <h1 id="name"></h1>
+        <div class="meta" id="meta"></div>
+      </div>
+    </div>
+    <p class="desc" id="desc"></p>
+    <div class="actions">
+      <a class="btn primary" id="open" href="#">▶ Open in Streamer</a>
+      <a class="btn" href="#download">Get the app</a>
+    </div>
+  </section>
+
+  <section id="intro">
+    <h1 style="margin-top:36px">Movies, series and live TV in one app.</h1>
+    <p class="desc">Free on Android phones, Android TV, Fire TV, Windows and Mac.</p>
+  </section>
+
+  <h2 id="download">Download Streamer</h2>
+  <p class="hint">Already installed? Use “Open in Streamer” above.</p>
+  <div class="grid" id="downloads"></div>
+
+  <h2 id="tvs">LG &amp; Samsung TVs</h2>
+  <p class="desc" style="margin-top:6px">Open your TV's <strong>web browser</strong> and go to:</p>
+  <p style="font-size:22px;font-weight:800;letter-spacing:.3px;margin:8px 0 4px" id="liteurl"></p>
+  <p class="hint">This is <strong>Streamer Lite</strong>: browse, My List, sync, Live TV and subtitles. Movies and
+    series play through <strong>TorBox or Real-Debrid</strong> (connect one in Profile) — there is no built-in
+    torrent engine and no downloads on these TVs. For the full app, plug an Android TV / Fire TV stick
+    into the TV.</p>
+  <div class="actions" style="margin-top:14px">
+    <a class="btn primary" id="openlite" href="lite/">▶ Open Streamer Lite</a>
+    <a class="btn" id="lgfile" href="#">LG app file (.ipk, for Developer Mode)</a>
+  </div>
+
+  <h2>Fire TV Stick &amp; Android TV</h2>
+  <p class="desc" style="margin-top:6px">Install the free <strong>Downloader</strong> app from the
+    Amazon / Google Play store, open it, and type this address:</p>
+  <p style="font-size:22px;font-weight:800;letter-spacing:.3px;margin:8px 0 4px" id="tvurl"></p>
+  <p class="hint">Choose “Android TV / Fire TV”, install, then open Streamer from your apps.
+    (Allow “install unknown apps” for Downloader when asked.)</p>
+
+  <footer>Movie info from Cinemeta / TMDB. Streamer does not host any videos.</footer>
+</main>
+<script>
+  // Where the download files live (GitHub Releases of the app's repository).
+  const RELEASES = 'https://github.com/hassanshamso12-sys/streamer-app/releases/latest/download/';
+  const FILES = [
+    { id: 'android', name: 'Android phone', file: 'Streamer-Android-phone-arm64.apk', note: 'APK · allow “install unknown apps”' },
+    { id: 'tv', name: 'Android TV / Fire TV / older phones', file: 'Streamer-Android-TV-box-armv7.apk', note: 'APK for TV boxes and sticks' },
+    { id: 'windows', name: 'Windows 10 / 11', file: 'Streamer-Windows-Setup.exe', note: 'Installer' },
+    { id: 'mac', name: 'Mac', file: 'Streamer-Mac.dmg', note: 'macOS 13 or later' },
+  ];
+
+  const home = location.host + location.pathname.replace(/index\.html$/, '');
+  document.getElementById('tvurl').textContent = home;
+  document.getElementById('liteurl').textContent = home.replace(/\/?$/, '/') + 'lite';
+  document.getElementById('lgfile').href = RELEASES + 'Streamer-LG.ipk';
+  const ua = navigator.userAgent;
+  const smartTv = /Web0S|webOS|Tizen|SMART-TV|SmartTV/i.test(ua) && !/Android/i.test(ua);
+  const platform = /Android/i.test(ua) ? (/TV|AFT|BRAVIA|SMART-TV/i.test(ua) ? 'tv' : 'android')
+    : smartTv ? 'smarttv' : /Windows/i.test(ua) ? 'windows' : /Macintosh/i.test(ua) ? 'mac' : '';
+  // On an LG / Samsung TV: offer Lite right at the top.
+  if (smartTv) {
+    const intro = document.getElementById('intro');
+    const a = document.createElement('a');
+    a.className = 'btn primary'; a.href = 'lite/'; a.textContent = '▶ Open Streamer Lite';
+    a.style.marginTop = '18px'; a.style.fontSize = '20px';
+    intro.appendChild(a);
+  }
+
+  const list = document.getElementById('downloads');
+  for (const f of FILES.sort((a, b) => (b.id === platform) - (a.id === platform))) {
+    const a = document.createElement('a');
+    a.className = 'dl' + (f.id === platform ? ' mine' : '');
+    a.href = RELEASES + f.file;
+    a.innerHTML = '<strong></strong><span></span>';
+    a.querySelector('strong').textContent = (f.id === platform ? '★ ' : '') + f.name;
+    a.querySelector('span').textContent = f.note;
+    list.appendChild(a);
+  }
+
+  const q = new URLSearchParams(location.search);
+  const type = q.get('t'), id = q.get('id');
+  if (type && id && /^tt\d+(:\d+:\d+)?$/.test(id) && /^(movie|series)$/.test(type)) {
+    const appLink = `streamer://title/${type}/${encodeURIComponent(id)}`;
+    const open = document.getElementById('open');
+    open.href = platform === 'android' || platform === 'tv'
+      // Android: open the app if installed, otherwise jump to the downloads.
+      ? `intent://title/${type}/${encodeURIComponent(id)}#Intent;scheme=streamer;package=com.hassan.streamer;` +
+        `S.browser_fallback_url=${encodeURIComponent(location.href.split('#')[0] + '#download')};end`
+      : appLink;
+
+    fetch(`https://v3-cinemeta.strem.io/meta/${type}/${encodeURIComponent(id.split(':')[0])}.json`)
+      .then(r => r.json())
+      .then(({ meta }) => {
+        if (!meta) return;
+        document.title = `${meta.name} — Streamer`;
+        document.getElementById('name').textContent = meta.name;
+        const m = document.getElementById('meta');
+        const add = (text, star) => {
+          const span = document.createElement('span');
+          if (star) { const st = document.createElement('span'); st.className = 'star'; st.textContent = '★ '; span.appendChild(st); }
+          span.appendChild(document.createTextNode(text));
+          m.appendChild(span);
+        };
+        if (meta.imdbRating) add(Number(meta.imdbRating).toFixed(1), true);
+        if (meta.releaseInfo || meta.year) add(String(meta.releaseInfo || meta.year));
+        if (meta.runtime) add(String(meta.runtime));
+        if (meta.genres) add(meta.genres.slice(0, 3).join(' · '));
+        document.getElementById('desc').textContent = meta.description || '';
+        if (meta.poster) document.getElementById('poster').src = meta.poster;
+        if (meta.background) document.getElementById('backdrop').style.backgroundImage = `url("${meta.background}")`;
+        document.getElementById('title').hidden = false;
+        document.getElementById('intro').hidden = true;
+      })
+      .catch(() => {});
+  }
+</script>
+</body>
+</html>
