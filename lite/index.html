@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <!--
+    If you are serving your web app in a path other than the root, change the
+    href value below to reflect the base path you are serving from.
+
+    The path provided below has to start and end with a slash "/" in order for
+    it to work correctly.
+
+    For more details:
+    * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
+
+    This is a placeholder for base href that will be replaced by the value of
+    the `--base-href` argument provided to `flutter build`.
+  -->
+  <base href="/streamer-app/lite/">
+
+  <meta charset="UTF-8">
+  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="description" content="Streamer: movies, series and live TV.">
+
+  <!-- iOS meta tags & icons -->
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="streamer">
+  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="favicon.png"/>
+
+  <title>Streamer</title>
+  <link rel="manifest" href="manifest.json">
+  <!-- HLS live streams in browsers (LG / Samsung TVs also play HLS natively) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/hls.js/1.5.20/hls.min.js"></script>
+  <script src="tv_keys.js"></script>
+  <style>html,body{background:#0B1433}</style>
+</head>
+<body>
+  <!--
+    You can customize the "flutter_bootstrap.js" script.
+    This is useful to provide a custom configuration to the Flutter loader
+    or to give the user feedback during the initialization process.
+
+    For more details:
+    * https://docs.flutter.dev/platform-integration/web/initialization
+  -->
+  <!-- Plain message while loading. If the app can't start (old TV browser,
+       script error), it says why instead of leaving an empty screen.
+       Old-style JavaScript on purpose, so old browsers can run it. -->
+  <div id="boot" style="position:fixed;left:0;right:0;top:40%;text-align:center;
+       color:#F2F5FF;font:24px sans-serif;padding:0 40px">Starting Streamer…</div>
+  <script>
+    (function () {
+      var box = document.getElementById('boot');
+      var started = false, errors = [];
+      function chrome() {
+        var m = navigator.userAgent.match(/Chrom(e|ium)\/(\d+)/);
+        return m ? parseInt(m[2], 10) : 0;
+      }
+      function fail(why) {
+        if (started || !box) return;
+        var v = chrome();
+        box.innerHTML = '<div style="font-size:30px;font-weight:bold;margin-bottom:16px">' +
+          'Streamer Lite can’t start on this browser</div>' +
+          '<div style="color:#9AA6C7;line-height:1.5">' +
+          (v && v < 84 ? 'This TV’s browser is too old (version ' + v + ').' : why) +
+          '<br><br><span style="font-size:15px">' +
+          navigator.userAgent.replace(/</g, '') + '</span></div>';
+      }
+      window.addEventListener('flutter-first-frame', function () {
+        started = true;
+        if (box) box.parentNode.removeChild(box);
+      });
+      window.onerror = function (msg) {
+        errors.push(String(msg));
+        setTimeout(function () { fail('Error: ' + errors[0]); }, 3000);
+      };
+      setTimeout(function () {
+        fail('It didn’t start within 45 seconds.' +
+          (errors.length ? ' Error: ' + errors[0] : ''));
+      }, 45000);
+    })();
+  </script>
+  <script src="flutter_bootstrap.js" async></script>
+</body>
+</html>
