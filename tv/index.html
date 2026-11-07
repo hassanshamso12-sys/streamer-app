@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Streamer TV</title>
+<!-- Streamer for older TV browsers (LG / Hyundai webOS, Samsung Tizen):
+     plain JavaScript that Chrome 76-era engines run. -->
+<link rel="stylesheet" href="tv.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/hls.js/1.5.20/hls.min.js"></script>
+</head>
+<body>
+  <nav id="menu"></nav>
+  <main id="page"></main>
+  <div id="player" class="hidden">
+    <video id="video" preload="auto"></video>
+    <div id="subs"></div>
+    <div id="osd">
+      <div id="osd-top">
+        <div class="pbtn" data-a="back">‹ Back</div>
+        <div id="osd-title"></div>
+      </div>
+      <div id="osd-bottom">
+        <div id="osd-bar"><div id="osd-buf"></div><div id="osd-fill"></div></div>
+        <div id="osd-row">
+          <div id="osd-time"></div>
+          <div id="osd-btns">
+            <div class="pbtn" data-a="rew">⏪ 10</div>
+            <div class="pbtn big" data-a="play">❚❚</div>
+            <div class="pbtn" data-a="fwd">10 ⏩</div>
+            <div class="pbtn" data-a="subs">Subtitles</div>
+          </div>
+        </div>
+        <div id="osd-hint">OK pause · ◀ ▶ 10 s · ▼ buttons · ▲ subtitles · Back exit</div>
+      </div>
+    </div>
+    <div id="spinner" class="hidden"></div>
+    <div id="sheet" class="hidden"></div>
+  </div>
+  <div id="toast" class="hidden"></div>
+  <script src="unzip.js"></script>
+  <script src="app.js"></script>
+  <script src="pages.js"></script>
+  <script src="live.js"></script>
+  <script src="player.js"></script>
+</body>
+</html>
