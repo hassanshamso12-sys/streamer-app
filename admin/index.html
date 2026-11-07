@@ -1,0 +1,382 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Streamer Admin</title>
+<style>
+  :root {
+    --bg: #0a0906; --surface: #17140d; --surface-hi: #241f13; --border: rgba(217,162,27,.18);
+    --gold: #d9a21b; --gold2: #e8b83a; --on-gold: #120e05; --text: #f5f1e6; --muted: #a89f8a;
+    --green: #34d399; --red: #f87171; --orange: #fb923c; --blue: #60a5fa;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+    font: 15px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+  .wrap { max-width: 980px; margin: 0 auto; padding: 20px 16px 60px; }
+  header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 18px; }
+  h1 { font-size: 24px; margin: 0; }
+  h1 span { color: var(--gold2); }
+  h2 { font-size: 16px; margin: 0 0 12px; color: var(--gold2); }
+  .card { background: linear-gradient(160deg, var(--surface-hi), var(--surface)); border: 1px solid var(--border);
+    border-radius: 16px; padding: 18px; margin-bottom: 16px; }
+  input, select, textarea { width: 100%; background: #0f0d08; color: var(--text); border: 1px solid var(--border);
+    border-radius: 10px; padding: 10px 12px; font: inherit; }
+  textarea { min-height: 60px; resize: vertical; }
+  label { display: block; font-size: 12px; color: var(--muted); margin: 10px 0 4px; }
+  button { font: inherit; font-weight: 700; border: 0; border-radius: 10px; padding: 9px 14px; cursor: pointer;
+    background: rgba(255,255,255,.09); color: var(--text); }
+  button:hover { background: rgba(255,255,255,.16); }
+  button.gold { background: linear-gradient(135deg, #e8b83a, #a9780f); color: var(--on-gold); }
+  button.red { background: rgba(248,113,113,.15); color: var(--red); }
+  button.small { padding: 6px 10px; font-size: 13px; }
+  button:disabled { opacity: .5; cursor: default; }
+  .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0 14px; }
+  @media (max-width: 640px) { .grid2 { grid-template-columns: 1fr; } }
+  .muted { color: var(--muted); }
+  .small { font-size: 13px; }
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 16px; }
+  @media (max-width: 640px) { .stats { grid-template-columns: repeat(2, 1fr); } }
+  .stat { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 12px 14px; cursor: pointer; }
+  .stat.on { border-color: var(--gold); }
+  .stat b { display: block; font-size: 24px; }
+  .tools { display: flex; gap: 10px; margin-bottom: 12px; }
+  .member { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 14px 16px; margin-bottom: 10px; }
+  .member .top { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+  .member .email { font-weight: 800; font-size: 16px; word-break: break-all; }
+  .member .info { margin: 6px 0 10px; display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: 13px; color: var(--muted); }
+  .member .info a { color: var(--gold2); text-decoration: none; }
+  .badge { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 800; white-space: nowrap; }
+  .b-active { background: rgba(52,211,153,.15); color: var(--green); }
+  .b-trial { background: rgba(96,165,250,.15); color: var(--blue); }
+  .b-waiting { background: rgba(251,146,60,.15); color: var(--orange); }
+  .b-off, .b-ended { background: rgba(248,113,113,.15); color: var(--red); }
+  .b-admin { background: rgba(217,162,27,.18); color: var(--gold2); margin-left: 6px; }
+  .msg { padding: 10px 14px; border-radius: 10px; margin: 10px 0; font-size: 14px; }
+  .msg.err { background: rgba(248,113,113,.12); color: var(--red); }
+  .msg.ok { background: rgba(52,211,153,.12); color: var(--green); }
+  .hidden { display: none !important; }
+  dialog { background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: 16px;
+    padding: 20px; width: min(520px, calc(100vw - 32px)); }
+  dialog::backdrop { background: rgba(0,0,0,.7); }
+  .toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); background: var(--surface-hi);
+    border: 1px solid var(--gold); padding: 10px 18px; border-radius: 12px; z-index: 10; }
+  code { background: #0f0d08; padding: 1px 6px; border-radius: 6px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Streamer <span>Admin</span></h1>
+    <div class="row">
+      <span id="who" class="muted small"></span>
+      <button id="out" class="small hidden">Sign out</button>
+    </div>
+  </header>
+
+  <!-- Sign in -->
+  <div id="login" class="card hidden" style="max-width:420px;margin:40px auto">
+    <h2>Sign in</h2>
+    <p class="muted small">Use your Streamer account. Only admin accounts can open this page.</p>
+    <label>Email</label><input id="email" type="email" autocomplete="username">
+    <label>Password</label><input id="pw" type="password" autocomplete="current-password">
+    <div id="loginMsg"></div>
+    <div style="margin-top:14px"><button class="gold" id="go">Sign in</button></div>
+  </div>
+
+  <div id="app" class="hidden">
+    <div id="setupMsg"></div>
+
+    <!-- Contact info -->
+    <div class="card">
+      <h2>Your contact info</h2>
+      <p class="muted small" style="margin-top:-6px">Shown in the app to people who aren't active yet, or whose subscription ended.</p>
+      <div class="grid2">
+        <div><label>WhatsApp number</label><input id="cWa" placeholder="+961 70 123 456"></div>
+        <div><label>Phone number(s)</label><input id="cPhone" placeholder="+961 70 123 456 / +961 3 123 456"></div>
+      </div>
+      <label>Message</label><input id="cMsg" placeholder="Contact Hassan to activate your account.">
+      <div style="margin-top:12px"><button class="gold" id="cSave">Save contact info</button></div>
+    </div>
+
+    <div class="stats" id="stats"></div>
+    <div class="tools">
+      <input id="q" placeholder="Search email, name or phone">
+      <button id="reload" title="Reload">↻</button>
+    </div>
+    <div id="list"></div>
+  </div>
+</div>
+
+<!-- Edit -->
+<dialog id="edit">
+  <h2 id="eTitle">Edit</h2>
+  <div class="grid2">
+    <div><label>Name</label><input id="eName"></div>
+    <div><label>Phone / WhatsApp</label><input id="ePhone"></div>
+    <div><label>Status</label>
+      <select id="eStatus">
+        <option value="waiting">Waiting (not activated)</option>
+        <option value="trial">Trial</option>
+        <option value="active">Active (paying)</option>
+        <option value="off">Off</option>
+      </select></div>
+    <div><label>Active until (empty = no end)</label><input id="eUntil" type="date"></div>
+  </div>
+  <label>TorBox key for this person (used automatically in their app)</label>
+  <input id="eKey" placeholder="Leave empty if they add their own" autocomplete="off">
+  <label>Who owns that TorBox account</label>
+  <select id="eBy">
+    <option value="">Not set</option>
+    <option value="me">Me (a trial key, or one I bought for them)</option>
+    <option value="them">Them (their own key)</option>
+  </select>
+  <label>Note (only you see it)</label><textarea id="eNote" placeholder="e.g. paid $5 on 7 Nov"></textarea>
+  <div class="row" style="margin-top:16px;justify-content:flex-end">
+    <button id="eCancel">Cancel</button>
+    <button class="gold" id="eSave">Save</button>
+  </div>
+</dialog>
+
+<!-- Delete -->
+<dialog id="del">
+  <h2>Delete this account?</h2>
+  <p>This permanently deletes <b id="dEmail"></b> and everything in it: profiles, lists, progress and keys. It can't be undone.</p>
+  <label>Type the email to confirm</label><input id="dType" autocomplete="off">
+  <div class="row" style="margin-top:16px;justify-content:flex-end">
+    <button id="dCancel">Cancel</button>
+    <button class="red" id="dGo" disabled>Delete for good</button>
+  </div>
+</dialog>
+
+<script>
+(function () {
+  'use strict';
+  const SUPABASE = 'https://hdndmqmnflhejregkzow.supabase.co';
+  const KEY = 'sb_publishable_7zY5ndyGWxX4NHh5RHcAmA_2HRUnGFZ';
+  const $ = (id) => document.getElementById(id);
+  let auth = null, members = [], filter = 'all', editing = null, deleting = null;
+
+  // ---------- Session ----------
+  try { auth = JSON.parse(localStorage.getItem('streamer_admin') || 'null'); } catch (e) { auth = null; }
+  function save(s) {
+    auth = { token: s.access_token, refresh: s.refresh_token, email: s.user && s.user.email,
+      exp: Date.now() + (s.expires_in || 3600) * 1000 };
+    try { localStorage.setItem('streamer_admin', JSON.stringify(auth)); } catch (e) {}
+  }
+  function signOut() {
+    auth = null;
+    try { localStorage.removeItem('streamer_admin'); } catch (e) {}
+    show();
+  }
+  async function call(path, opts) {
+    opts = opts || {};
+    if (auth && Date.now() > auth.exp - 60000) {
+      const r = await fetch(SUPABASE + '/auth/v1/token?grant_type=refresh_token', {
+        method: 'POST', headers: { apikey: KEY, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refresh_token: auth.refresh }) });
+      if (!r.ok) { signOut(); throw new Error('Signed out. Sign in again.'); }
+      save(await r.json());
+    }
+    const headers = { apikey: KEY, 'Content-Type': 'application/json' };
+    if (auth) headers.Authorization = 'Bearer ' + auth.token;
+    if (opts.prefer) headers.Prefer = opts.prefer;
+    const r = await fetch(SUPABASE + path, { method: opts.method || 'GET', headers,
+      body: opts.body ? JSON.stringify(opts.body) : undefined });
+    const text = await r.text();
+    let j = null; try { j = text ? JSON.parse(text) : null; } catch (e) {}
+    if (!r.ok) {
+      const m = (j && (j.message || j.error_description || j.msg)) || ('Error ' + r.status);
+      const err = new Error(m); err.code = j && j.code; throw err;
+    }
+    return j;
+  }
+
+  // ---------- Screens ----------
+  function show() {
+    $('login').classList.toggle('hidden', !!auth);
+    $('app').classList.toggle('hidden', !auth);
+    $('out').classList.toggle('hidden', !auth);
+    $('who').textContent = auth ? auth.email : '';
+    if (auth) load();
+  }
+  $('go').onclick = async () => {
+    $('loginMsg').innerHTML = '';
+    try {
+      const r = await fetch(SUPABASE + '/auth/v1/token?grant_type=password', {
+        method: 'POST', headers: { apikey: KEY, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: $('email').value.trim(), password: $('pw').value }) });
+      const j = await r.json();
+      if (!r.ok) throw new Error(j.error_description || j.msg || 'Wrong email or password');
+      save(j);
+      $('pw').value = '';
+      show();
+    } catch (e) { $('loginMsg').innerHTML = '<div class="msg err">' + esc(e.message) + '</div>'; }
+  };
+  $('pw').onkeydown = (e) => { if (e.key === 'Enter') $('go').click(); };
+  $('out').onclick = signOut;
+  $('reload').onclick = () => load();
+  $('q').oninput = draw;
+
+  async function load() {
+    $('setupMsg').innerHTML = '';
+    try {
+      const c = await call('/rest/v1/app_contact?id=eq.1&select=whatsapp,phone,message');
+      if (c && c[0]) { $('cWa').value = c[0].whatsapp || ''; $('cPhone').value = c[0].phone || ''; $('cMsg').value = c[0].message || ''; }
+      members = await call('/rest/v1/rpc/admin_members', { method: 'POST', body: {} }) || [];
+      draw();
+    } catch (e) {
+      const notSetUp = e.code === 'PGRST202' || e.code === '42P01' || /does not exist|Could not find/i.test(e.message);
+      $('setupMsg').innerHTML = '<div class="msg err">' + (notSetUp
+        ? 'Memberships aren\'t set up yet. Run <code>supabase/members.sql</code> in Supabase → SQL Editor first.'
+        : /Admins only/.test(e.message)
+          ? 'This account isn\'t an admin. Sign in with the admin account (set in members.sql).'
+          : esc(e.message)) + '</div>';
+      $('list').innerHTML = ''; $('stats').innerHTML = '';
+    }
+  }
+
+  $('cSave').onclick = async () => {
+    try {
+      await call('/rest/v1/app_contact?id=eq.1', { method: 'PATCH', prefer: 'return=minimal',
+        body: { whatsapp: $('cWa').value.trim() || null, phone: $('cPhone').value.trim() || null,
+          message: $('cMsg').value.trim() || null } });
+      toast('Contact info saved');
+    } catch (e) { toast(e.message); }
+  };
+
+  // ---------- Members ----------
+  function state(m) {
+    if (m.status === 'waiting' || m.status === 'off') return m.status;
+    if (m.active_until && new Date(m.active_until) < new Date()) return 'ended';
+    return m.status;
+  }
+  const LABEL = { active: 'Active', trial: 'Trial', waiting: 'Waiting', off: 'Off', ended: 'Ended' };
+  function draw() {
+    const counts = { all: members.length, waiting: 0, active: 0, trial: 0, ended: 0 };
+    members.forEach((m) => { const s = state(m); counts[s === 'off' ? 'ended' : s]++; });
+    const tiles = [['all', 'Everyone'], ['waiting', 'Waiting'], ['trial', 'Trial'], ['active', 'Active'], ['ended', 'Ended / off']];
+    $('stats').innerHTML = '';
+    tiles.slice(1).forEach(([k, label]) => {
+      const t = document.createElement('div');
+      t.className = 'stat' + (filter === k ? ' on' : '');
+      t.innerHTML = '<span class="muted small">' + label + '</span><b>' + counts[k] + '</b>';
+      t.onclick = () => { filter = filter === k ? 'all' : k; draw(); };
+      $('stats').appendChild(t);
+    });
+    const q = $('q').value.trim().toLowerCase();
+    const list = members.filter((m) => {
+      const s = state(m) === 'off' ? 'ended' : state(m);
+      if (filter !== 'all' && s !== filter) return false;
+      return !q || [m.email, m.name, m.phone].some((v) => (v || '').toLowerCase().includes(q));
+    });
+    $('list').innerHTML = list.length ? '' : '<p class="muted">Nobody here.</p>';
+    list.forEach((m) => $('list').appendChild(row(m)));
+  }
+  function row(m) {
+    const s = state(m);
+    const d = document.createElement('div');
+    d.className = 'member';
+    const wa = (m.phone || '').replace(/[^0-9]/g, '');
+    const until = m.active_until ? fmt(m.active_until) : 'no end date';
+    const info = [];
+    if (m.name) info.push(esc(m.name));
+    if (m.phone) info.push('📞 ' + esc(m.phone) + (wa.length > 6 ? ' · <a target="_blank" href="https://wa.me/' + wa + '">WhatsApp</a>' : ''));
+    info.push((s === 'waiting' ? 'Signed up ' + fmt(m.created_at) : (s === 'ended' ? 'Ended ' : 'Until ') + until));
+    info.push('Last used: ' + (m.last_seen ? fmt(m.last_seen) : 'never'));
+    info.push('TorBox: ' + (m.torbox_key ? (m.torbox_by === 'them' ? 'their key' : 'key from you') + ' ••••' + esc(m.torbox_key.slice(-4))
+      : m.torbox_by === 'them' ? 'their own' : 'none'));
+    if (m.note) info.push('📝 ' + esc(m.note));
+    d.innerHTML = '<div class="top"><div class="email">' + esc(m.email || '(no email)') +
+      (m.is_admin ? '<span class="badge b-admin">Admin</span>' : '') + '</div>' +
+      '<span class="badge b-' + s + '">' + LABEL[s] + '</span></div>' +
+      '<div class="info">' + info.map((x) => '<span>' + x + '</span>').join('') + '</div>';
+    const actions = document.createElement('div');
+    actions.className = 'row';
+    const btn = (label, cls, fn) => { const b = document.createElement('button'); b.className = 'small ' + cls; b.textContent = label; b.onclick = fn; actions.appendChild(b); };
+    if (s !== 'active' || m.active_until) btn('Activate (no end)', 'gold', () => patch(m, { status: 'active', active_until: null }, 'Activated'));
+    if (s === 'waiting') btn('Trial 7 days', '', () => patch(m, { status: 'trial', active_until: days(7) }, 'Trial for 7 days'));
+    if (!m.is_admin) btn('+1 month', '', () => patch(m, { status: 'active', active_until: plusMonth(m) }, 'Active until ' + fmt(plusMonth(m))));
+    if (s !== 'off' && !m.is_admin) btn('Turn off', 'red', () => patch(m, { status: 'off' }, 'Turned off'));
+    btn('Edit', '', () => openEdit(m));
+    if (!m.is_admin) btn('Delete', 'red', () => openDelete(m));
+    d.appendChild(actions);
+    return d;
+  }
+  async function patch(m, body, done) {
+    try {
+      body.updated_at = new Date().toISOString();
+      await call('/rest/v1/members?user_id=eq.' + m.user_id, { method: 'PATCH', prefer: 'return=minimal', body });
+      Object.assign(m, body);
+      draw();
+      toast(done + ': ' + m.email);
+    } catch (e) { toast(e.message); }
+  }
+  function days(n) { const d = new Date(); d.setDate(d.getDate() + n); d.setHours(23, 59, 0, 0); return d.toISOString(); }
+  function plusMonth(m) {
+    const now = new Date();
+    const from = m.active_until && new Date(m.active_until) > now ? new Date(m.active_until) : now;
+    from.setMonth(from.getMonth() + 1); from.setHours(23, 59, 0, 0);
+    return from.toISOString();
+  }
+
+  // ---------- Edit ----------
+  function openEdit(m) {
+    editing = m;
+    $('eTitle').textContent = m.email;
+    $('eName').value = m.name || ''; $('ePhone').value = m.phone || '';
+    $('eStatus').value = m.status; $('eKey').value = m.torbox_key || ''; $('eBy').value = m.torbox_by || '';
+    $('eNote').value = m.note || '';
+    $('eUntil').value = m.active_until ? localDate(new Date(m.active_until)) : '';
+    $('edit').showModal();
+  }
+  $('eCancel').onclick = () => $('edit').close();
+  $('eSave').onclick = async () => {
+    const u = $('eUntil').value;
+    const key = $('eKey').value.trim();
+    await patch(editing, {
+      name: $('eName').value.trim() || null, phone: $('ePhone').value.trim() || null,
+      status: $('eStatus').value, active_until: u ? new Date(u + 'T23:59:00').toISOString() : null,
+      torbox_key: key || null, torbox_by: $('eBy').value || (key ? 'me' : null),
+      note: $('eNote').value.trim() || null
+    }, 'Saved');
+    $('edit').close();
+  };
+
+  // ---------- Delete ----------
+  function openDelete(m) {
+    deleting = m;
+    $('dEmail').textContent = m.email; $('dType').value = ''; $('dGo').disabled = true;
+    $('del').showModal();
+  }
+  $('dType').oninput = () => { $('dGo').disabled = $('dType').value.trim().toLowerCase() !== (deleting.email || '').toLowerCase(); };
+  $('dCancel').onclick = () => $('del').close();
+  $('dGo').onclick = async () => {
+    try {
+      await call('/rest/v1/rpc/admin_delete_user', { method: 'POST', body: { target: deleting.user_id } });
+      members = members.filter((x) => x !== deleting);
+      $('del').close(); draw();
+      toast('Deleted ' + deleting.email);
+    } catch (e) { toast(e.message); }
+  };
+
+  // ---------- Small helpers ----------
+  function fmt(iso) { return new Date(iso).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }); }
+  function localDate(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+  let toastTimer = 0;
+  function toast(t) {
+    let el = document.querySelector('.toast');
+    if (!el) { el = document.createElement('div'); el.className = 'toast'; document.body.appendChild(el); }
+    el.textContent = t;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => el.remove(), 3000);
+  }
+
+  show();
+})();
+</script>
+</body>
+</html>
