@@ -1,0 +1,216 @@
+/* Black with dark yellow gradients, like the app. Plain CSS for old TV
+   browsers: no flex "gap", no aspect-ratio, no inset. */
+:root {
+  --bg: #0a0906; --surface: #17140d; --surface-hi: #241f13;
+  --text: #f5f1e6; --muted: #a89f8a; --gold: #d9a21b; --gold2: #e8b83a;
+  --on-gold: #120e05; --border: rgba(217,162,27,.2);
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; overflow: hidden; background: var(--bg);
+  color: var(--text); font-family: "Segoe UI", Roboto, Arial, sans-serif; }
+body { background: linear-gradient(180deg, #1e1909 0%, #0a0906 55%, #050402 100%); }
+.hidden { display: none !important; }
+
+/* Side menu: icons centred top to bottom, sized to the screen */
+#menu { position: fixed; left: 0; top: 0; bottom: 0; width: 7.5vw; z-index: 5;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  background: linear-gradient(90deg, rgba(5,4,2,.96), rgba(5,4,2,0)); }
+#menu .logo { position: absolute; top: 3.2vh; color: var(--gold); font-size: 2.6vw; }
+#menu .item { width: 4.2vw; height: 4.2vw; border-radius: 50%; margin: 1.1vw 0;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(255,255,255,.08); color: var(--text); }
+#menu .item svg { width: 2.1vw; height: 2.1vw; }
+#menu .item.on { background: rgba(138,98,16,.85); }
+#menu .label { display: none; }
+
+/* Pages */
+#page { position: absolute; left: 7.5vw; right: 0; top: 0; bottom: 0; overflow: hidden; }
+.scroll { position: absolute; left: 0; right: 0; top: 0; bottom: 0; overflow: hidden; }
+.pad { padding: 4vh 3vw 14vh 2vw; }
+h1 { font-size: 2.9vw; margin: 0 0 1.4vw; letter-spacing: -1px; }
+h2 { font-size: 1.7vw; margin: 2vw 0 1vw; }
+.muted { color: var(--muted); }
+body { font-size: 1.25vw; }
+
+/* Hero (focused title) */
+#hero { height: 46vh; position: relative; padding: 6vh 0 0 2vw; }
+#hero-bg { position: absolute; left: 0; right: 0; top: 0; height: 100%;
+  background-size: cover; background-position: center 20%; }
+/* Darker on the left (behind the text) and at the bottom (behind the rows),
+   so text stays readable while the picture fills the whole area. */
+#hero-bg:after { content: ""; position: absolute; left: 0; top: 0; right: 0; bottom: 0;
+  background: linear-gradient(90deg, rgba(10,9,6,.92) 0%, rgba(10,9,6,.6) 32%, rgba(10,9,6,.1) 62%, rgba(10,9,6,0) 100%),
+              linear-gradient(0deg, #0a0906 0%, rgba(10,9,6,0) 40%); }
+#hero-info { position: relative; width: 46%; }
+#hero-title { font-size: 3.3vw; font-weight: 900; line-height: 1.05; margin-bottom: 1vw; }
+#hero-logo { max-height: 7vw; max-width: 26vw; margin-bottom: 1vw; display: block; }
+.meta-line { font-weight: 700; color: #e3e8f7; margin-bottom: .8vw; font-size: 1.3vw; }
+.meta-line span { margin-right: 1.1vw; }
+.desc { color: #c3c7d1; line-height: 1.45; font-size: 1.2vw; max-height: 5.4vw; overflow: hidden; }
+.imdb { background: #f5c518; color: #000; border-radius: 4px; padding: 1px 6px; font-weight: 900; }
+
+/* Rows of posters */
+.rows { position: absolute; left: 0; right: 0; top: 46vh; bottom: 0; overflow: hidden; }
+.row { margin: 0 0 .6vw 2vw; }
+.row-title { font-size: 1.55vw; font-weight: 800; margin: .8vw 0 .5vw; }
+.row-title small { color: var(--muted); font-weight: 600; font-size: 1.15vw; margin-left: .6vw; }
+.strip { white-space: nowrap; overflow: hidden; padding: .8vw 0 1.1vw .4vw; }
+.card { display: inline-block; vertical-align: top; width: 9.4vw; height: 14.1vw;
+  margin-right: 1.2vw; border-radius: .8vw; background: var(--surface-hi) center/cover no-repeat;
+  position: relative; white-space: normal; }
+.card .name { position: absolute; left: .5vw; right: .5vw; bottom: .5vw; font-size: 1vw;
+  font-weight: 700; text-shadow: 0 1px 4px #000; }
+.card.more { display: inline-flex; align-items: center; justify-content: center;
+  font-weight: 800; color: var(--gold2); border: 1px solid var(--border); background: var(--surface); }
+.grid .card { margin: 0 1.2vw 1.6vw 0; }
+.card.genre { width: 17vw; height: 9vw; background: linear-gradient(135deg,#6e4e0c,#2a1f08 60%,#0e0b05);
+  border: 1px solid var(--border); }
+.card.genre .gname { position: absolute; left: 1.4vw; bottom: 1.1vw; font-size: 1.9vw; font-weight: 800; }
+.card.genre:before { content: ''; position: absolute; left: 1.4vw; top: 1.3vw; width: 3vw; height: .35vw; border-radius: .2vw; background: #e8b83a; }
+
+/* Focus: gold ring, slightly larger */
+.f { outline: none; transition: transform .12s; }
+.f.focus { transform: scale(1.08); box-shadow: 0 0 0 4px var(--gold), 0 8px 26px rgba(217,162,27,.35); }
+#menu .item.focus { transform: scale(1.12); background: linear-gradient(135deg,#d9a21b,#a9780f 55%,#6e4d08);
+  color: var(--on-gold); box-shadow: 0 0 22px rgba(217,162,27,.7); }
+
+/* Buttons, inputs */
+.btn { display: inline-block; padding: 1vw 1.8vw; border-radius: .9vw; margin: 0 .9vw .9vw 0;
+  background: rgba(255,255,255,.1); font-weight: 700; font-size: 1.35vw; color: var(--text); }
+.btn.gold { background: linear-gradient(135deg,#d9a21b,#a9780f 55%,#6e4d08); color: var(--on-gold); }
+.btn.focus { transform: scale(1.06); box-shadow: 0 0 0 3px #fff; }
+input.f { display: block; width: 34vw; font-size: 1.5vw; padding: 1vw 1.2vw; margin: 0 0 1vw;
+  border-radius: 12px; border: 2px solid transparent; background: var(--surface-hi); color: var(--text); }
+input.f.focus { border-color: var(--gold); transform: none; box-shadow: none; }
+
+/* Sign in: QR on the left, email on the right */
+.signin { white-space: nowrap; }
+.signin > div { display: inline-block; vertical-align: top; white-space: normal; }
+.qrcol { width: 30vw; margin-right: 4vw; padding: 1.6vw; border-radius: 1.4vw;
+  background: var(--surface-hi); text-align: center; }
+.qrcol h2 { margin-top: 0; }
+.qrframe { display: inline-block; background: #fff; padding: .6vw; border-radius: 1vw; line-height: 0; }
+.qrframe canvas { width: 17vw; height: 17vw; image-rendering: pixelated; }
+.qrcode { font-size: 2.6vw; font-weight: 800; letter-spacing: .3vw; color: var(--gold); }
+.formcol { width: 36vw; }
+
+/* Passcode pad */
+.pindots span { display: inline-block; width: 1.4vw; height: 1.4vw; border-radius: 50%;
+  border: .2vw solid var(--gold); margin: 0 .8vw 0 0; }
+.pindots span.full { background: var(--gold); }
+.pinmsg { color: #f87171; height: 2.4vw; line-height: 2.4vw; margin: .6vw 0; font-size: 1.3vw; }
+.pinpad { width: 24vw; margin-bottom: 1.5vw; }
+.pinkey { width: 6.6vw; text-align: center; padding: 1vw 0; font-size: 1.7vw; }
+.small { font-size: 1.1vw; }
+
+/* Your devices */
+.devrow { padding: .8vw 0; white-space: nowrap; }
+.devrow > * { display: inline-block; vertical-align: middle; white-space: normal; }
+.devrow .dot { width: .9vw; height: .9vw; border-radius: 50%; background: #5a5446; margin-right: 1.2vw; }
+.devrow .dot.on { background: #34d399; }
+.devinfo { width: 40vw; margin-right: 1.5vw; }
+.devname { font-weight: 700; font-size: 1.4vw; }
+.devrow .btn { margin: 0; }
+
+/* Title page */
+.detail-bg { position: absolute; left: 0; right: 0; top: 0; height: 62vh;
+  background-size: cover; background-position: center top; opacity: .55; }
+.detail-bg:after { content: ""; position: absolute; left: 0; right: 0; top: 0; bottom: 0;
+  background: linear-gradient(0deg, #0a0906 5%, rgba(10,9,6,0) 70%); }
+.detail { position: relative; padding: 28vh 3vw 14vh 2vw; }
+.tag { display: inline-block; padding: .25vw .7vw; border-radius: .5vw; margin: 0 .6vw .6vw 0;
+  font-size: 1.05vw; font-weight: 700; background: rgba(255,255,255,.1); }
+.tag.gold { background: linear-gradient(135deg,#d9a21b,#9c7412); color: var(--on-gold); }
+.stream { display: block; padding: 1.1vw 1.3vw; border-radius: 1vw; margin: 0 0 .8vw;
+  background: var(--surface); border: 1px solid var(--border); max-width: 78vw; }
+.stream.best { border: 2px solid var(--gold); }
+.stream.alt { border: 2px solid rgba(217,162,27,.5); }
+.tag.warn { background: rgba(251,146,60,.18); color: #fbb27a; }
+.stream .t { font-weight: 700; margin-bottom: .5vw; font-size: 1.3vw; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.stream.focus { transform: scale(1.02); box-shadow: 0 0 0 3px var(--gold); }
+.ep { display: block; padding: 1vw 1.2vw; border-radius: .8vw; margin: 0 0 .6vw;
+  background: var(--surface); max-width: 78vw; font-size: 1.3vw; }
+.ep.focus { transform: none; box-shadow: 0 0 0 3px var(--gold); }
+
+/* Profiles */
+.profile { display: inline-block; width: 11vw; margin: 0 2vw 1.6vw 0; text-align: center; font-size: 1.3vw; }
+.avatar { width: 9.5vw; height: 9.5vw; border-radius: 2.6vw; margin: 0 auto .8vw; display: flex;
+  align-items: center; justify-content: center; font-size: 4vw; font-weight: 800; color: #fff; }
+.profile.focus { transform: scale(1.08); box-shadow: none; }
+.profile.focus .avatar { box-shadow: 0 0 0 5px var(--gold); }
+
+/* Player */
+#player { position: fixed; left: 0; top: 0; right: 0; bottom: 0; background: #000; z-index: 20; }
+#video { width: 100%; height: 100%; background: #000; }
+#subs { position: absolute; left: 6%; right: 6%; bottom: 7%; text-align: center; z-index: 1;
+  transition: bottom .3s; pointer-events: none; }
+#player.osd-on #subs { bottom: 235px; }
+#subs span { display: inline-block; padding: 4px 14px; margin-top: 4px; border-radius: 8px;
+  background: rgba(0,0,0,.6); font-size: 38px; line-height: 1.35; font-weight: 600;
+  text-shadow: 0 2px 4px #000; white-space: pre-line; }
+#video::cue { background: rgba(0,0,0,.55); font-size: 34px; line-height: 1.35; text-shadow: 0 2px 4px #000; }
+/* Player controls: big, hide while playing, come back on any key or
+   pointer movement. */
+#pback { position: absolute; left: 24px; top: 24px; z-index: 5; width: 52px; height: 52px; border-radius: 50%;
+  background: rgba(0,0,0,.45); color: #fff; font-size: 40px; line-height: 46px; text-align: center; cursor: pointer; }
+#player.osd-on #pback { display: none; }
+#osd { position: absolute; left: 0; top: 0; right: 0; bottom: 0; transition: opacity .35s; }
+#osd.off { opacity: 0; }
+#player.idle { cursor: none; }
+#osd-top { position: absolute; left: 0; right: 0; top: 0; padding: 34px 50px 70px;
+  display: flex; align-items: center; background: linear-gradient(180deg, rgba(0,0,0,.85), rgba(0,0,0,0)); }
+#osd-title { font-size: 34px; font-weight: 800; margin-left: 22px; white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis; }
+#osd-bottom { position: absolute; left: 0; right: 0; bottom: 0; padding: 90px 50px 36px;
+  background: linear-gradient(0deg, rgba(0,0,0,.9), rgba(0,0,0,0)); }
+#osd-bar { position: relative; height: 12px; background: rgba(255,255,255,.22); border-radius: 6px; }
+#osd-fill, #osd-buf { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 6px; }
+#osd-fill { background: linear-gradient(90deg, #d9a21b, #e8b83a); z-index: 2; }
+#osd-buf { background: rgba(255,255,255,.35); }
+#osd-row { display: flex; align-items: center; margin-top: 20px; }
+#osd-time { font-size: 26px; font-weight: 800; width: 320px; }
+#osd-btns { flex: 1; text-align: center; }
+.pbtn { display: inline-block; min-width: 110px; padding: 16px 22px; margin: 0 10px; border-radius: 16px;
+  font-size: 24px; font-weight: 800; text-align: center; background: rgba(255,255,255,.14); color: #fff; }
+.pbtn.big { min-width: 130px; font-size: 30px; }
+.pbtn.focus { background: linear-gradient(135deg,#d9a21b,#a9780f 55%,#6e4d08); color: var(--on-gold);
+  transform: scale(1.08); box-shadow: 0 0 24px rgba(217,162,27,.6); }
+#osd-hint { margin-top: 16px; color: var(--muted); font-size: 17px; text-align: center; }
+#spinner { position: absolute; left: 50%; top: 50%; width: 64px; height: 64px; margin: -32px 0 0 -32px;
+  border: 6px solid rgba(255,255,255,.2); border-top-color: var(--gold); border-radius: 50%;
+  animation: spin 1s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+#sheet { position: absolute; right: 0; top: 0; bottom: 0; width: 460px; padding: 30px;
+  background: rgba(23,20,13,.97); overflow: hidden; }
+#sheet .opt { display: block; padding: 12px 14px; border-radius: 10px; margin-bottom: 6px; }
+#sheet .opt.on { color: var(--gold2); font-weight: 800; }
+#sheet .opt.focus { transform: none; box-shadow: 0 0 0 3px var(--gold); }
+
+#toast { position: fixed; left: 50%; bottom: 40px; width: 640px; margin-left: -320px; z-index: 30;
+  padding: 16px 20px; border-radius: 14px; background: var(--surface-hi); text-align: center;
+  font-size: 18px; box-shadow: 0 10px 30px rgba(0,0,0,.6); }
+
+/* Live TV: categories on the left, channels on the right */
+.live-wrap { display: flex; align-items: flex-start; margin-top: 1.2vw; }
+.live-groups { width: 22vw; margin-right: 2vw; }
+.live-groups .grp { display: block; margin: 0 0 .6vw; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.live-channels { flex: 1; }
+.chan { display: inline-block; vertical-align: top; width: 13vw; height: 9.5vw; margin: 0 1vw 1vw 0;
+  border-radius: .9vw; background: var(--surface); text-align: center; padding: .8vw; position: relative; }
+.chan img { max-width: 80%; max-height: 4.6vw; margin: .3vw auto .5vw; display: block; }
+.chan-name { font-size: 1.1vw; font-weight: 700; line-height: 1.25; max-height: 2.8vw; overflow: hidden; }
+.chan.focus { transform: scale(1.06); box-shadow: 0 0 0 .3vw var(--gold); }
+.small { font-size: 1vw; margin-top: .6vw; }
+#player.live #osd-bar, #player.live [data-a="rew"], #player.live [data-a="fwd"], #player.live [data-a="subs"] { display: none; }
+
+/* "مدبلج": on Aradeb's Arabic-dubbed lists */
+.card .dub { position: absolute; left: .4vw; bottom: .5vw; padding: .15vw .5vw; border-radius: .4vw;
+  background: linear-gradient(135deg, #d9a21b, #9c7412); color: var(--on-gold); font-weight: 900;
+  font-size: .95vw; box-shadow: 0 2px 6px rgba(0,0,0,.6); }
+.grid.genres { margin-top: .6vw; }
+
+.blocked { max-width: 60vw; }
+.blocked .contact { background: var(--surface); border: 1px solid var(--border); border-radius: 1vw;
+  padding: 1.6vw 2vw; margin: 1.6vw 0; }
+.blocked .cmsg { font-size: 1.6vw; margin-bottom: .8vw; }
+.blocked .cline { font-size: 2.2vw; font-weight: 800; color: var(--gold2); margin-top: .5vw; }
