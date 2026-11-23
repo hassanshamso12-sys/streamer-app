@@ -36,10 +36,11 @@
   function press(a) {
     showOsd();
     if (a === 'back') return S.back();
-    if (a === 'play') return video.paused ? video.play() : video.pause();
+    if (a === 'play') { if (holding) endHold(true); else if (video.paused) video.play(); else video.pause(); return; }
     if (a === 'rew') return seek(-10);
     if (a === 'fwd') return seek(10);
     if (a === 'subs') return openSheet();
+    if (a === 'lighter') return switchLighter();
   }
   function seek(sec) {
     video.currentTime = Math.max(0, Math.min((video.duration || 1e9) - 1, video.currentTime + sec));
@@ -65,11 +66,24 @@
     if (subTrack) drawCues(subTrack); // reliable on every TV
   });
   video.addEventListener('progress', tick);
-  video.addEventListener('waiting', function () { $('spinner').classList.remove('hidden'); });
-  video.addEventListener('playing', function () { $('spinner').classList.add('hidden'); showOsd(); });
+  video.addEventListener('waiting', function () {
+    $('spinner').classList.remove('hidden');
+    if (started && !holding && !stallAt) stallAt = Date.now();
+  });
+  video.addEventListener('playing', function () {
+    if (holding) return;
+    $('spinner').classList.add('hidden');
+    showOsd();
+    var at = stallAt;
+    stallAt = 0;
+    if (at && Date.now() - at >= 2000 && !reconnecting) afterStall();
+  });
+  video.addEventListener('timeupdate', trackPosition);
   video.addEventListener('pause', function () { tick(); showOsd(); });
   video.addEventListener('error', function () {
     if (!cur || hls) return; // hls.js reports its own errors
+    // 3 = the file can't be decoded: reconnecting won't help.
+    if (started && !cur.live && !(video.error && video.error.code === 3)) return reconnect();
     var url = cur.url, m3u8 = /\.m3u8(\?|$)/i.test(url);
     var httpOnHttps = location.protocol === 'https:' && /^http:/i.test(url);
     if (m3u8 && !triedHls && !httpOnHttps && window.Hls && Hls.isSupported()) return useHls(url);
@@ -77,10 +91,126 @@
   });
 
   function save() {
-    if (cur && video.duration) S.saveResume(cur.videoId, video.currentTime, video.duration);
+    if (cur && video.duration) S.saveResume(cur.videoId, reconnecting ? goodPos : video.currentTime, video.duration);
+  }
+
+  // ---------- Slow or dropping internet ----------
+  // Each stall refills longer (one long pause instead of many short ones),
+  // a dropped connection reconnects at the same spot, and a file that keeps
+  // stopping offers a smaller ready one.
+  var WAITS = [2, 5, 10, 20, 30], RETRIES = [1, 2, 4, 8, 15, 30, 30, 30];
+  var started = false, holding = false, reconnecting = false;
+  var stallAt = 0, stalls = 0, lastStall = 0, waitStep = 0, tries = 0, goodPos = 0;
+  var retryTimer = 0, holdTimer = 0, lastBuf = 0, bufMoved = 0, backOnline = 0;
+  function resetRecovery() {
+    started = holding = reconnecting = false;
+    stallAt = stalls = lastStall = waitStep = tries = goodPos = lastBuf = backOnline = 0;
+    clearTimeout(retryTimer);
+    clearInterval(holdTimer);
+    $('lighter-btn').style.display = 'none';
+  }
+  function bufferedEnd() {
+    var b = video.buffered, t = video.currentTime;
+    for (var i = 0; i < b.length; i++) if (b.start(i) <= t + 0.5 && b.end(i) >= t) return b.end(i);
+    return t;
+  }
+  function trackPosition() {
+    if (!cur || cur.live) return;
+    var t = video.currentTime;
+    if (reconnecting) {
+      if (t < 0.5 || t < goodPos - 5) return;
+      reconnecting = false;
+      backOnline = Date.now();
+      clearTimeout(retryTimer);
+      S.toast('Back online', 2000);
+      return;
+    }
+    if (t < 1) return;
+    started = true;
+    goodPos = t;
+    if (tries && backOnline && Date.now() - backOnline >= 30000) tries = 0;
+  }
+  function afterStall() {
+    if (!cur || cur.live) return;
+    var now = Date.now();
+    if (lastStall && now - lastStall >= 600000) waitStep = 0;
+    lastStall = now;
+    stalls++;
+    waitStep++;
+    var wait = WAITS[Math.min(waitStep, WAITS.length - 1)];
+    if (wait > 2) holdFor(wait);
+    if (stalls >= 2 && cur.lighter && $('lighter-btn').style.display === 'none') {
+      $('lighter-btn').style.display = '';
+      showOsd();
+      setBtn(btns.length - 1);
+      S.toast('Keeps stopping? A lighter file is ready: ' + cur.lighter.label + '. Press OK to switch.', 7000);
+    }
+  }
+  function holdFor(sec) {
+    if (holding) return;
+    holding = true;
+    video.pause();
+    $('spinner').classList.remove('hidden');
+    var until = Date.now() + 45000;
+    clearInterval(holdTimer);
+    holdTimer = setInterval(function () {
+      if (!cur) return endHold(false);
+      if (!video.paused) return endHold(false); // Play was pressed
+      var end = bufferedEnd(), d = video.duration || 0;
+      if (end - video.currentTime >= sec || (d && end >= d - 1) || Date.now() > until) endHold(true);
+    }, 500);
+  }
+  function endHold(resume) {
+    clearInterval(holdTimer);
+    holding = false;
+    $('spinner').classList.add('hidden');
+    if (resume && cur) video.play();
+  }
+  function reconnect() {
+    if (reconnecting || !cur || cur.live) return;
+    if (tries >= RETRIES.length) {
+      $('spinner').classList.add('hidden');
+      return S.toast('Couldn’t reconnect. Check your internet, then open it again.', 8000);
+    }
+    reconnecting = true;
+    if (holding) endHold(false);
+    var wait = RETRIES[tries++] * 1000, item = cur;
+    $('spinner').classList.remove('hidden');
+    S.toast('Connection lost. Reconnecting…', 4000);
+    clearTimeout(retryTimer);
+    retryTimer = setTimeout(function () {
+      if (cur !== item) return;
+      video.onloadedmetadata = function () {
+        video.currentTime = goodPos;
+        video.play();
+      };
+      video.src = item.url;
+      video.load();
+      retryTimer = setTimeout(function () {
+        if (cur !== item || !reconnecting) return;
+        reconnecting = false;
+        reconnect();
+      }, 25000);
+    }, wait);
+  }
+  // A dead connection can wait forever without any error.
+  setInterval(function () {
+    if (!cur || cur.live || !started || reconnecting || holding || hls) return;
+    var end = bufferedEnd();
+    if (end !== lastBuf || !stallAt) { lastBuf = end; bufMoved = Date.now(); return; }
+    if (Date.now() - bufMoved >= 30000) { bufMoved = Date.now(); reconnect(); }
+  }, 5000);
+  function switchLighter() {
+    if (!cur || !cur.lighter) return;
+    var next = cur.lighter.item();
+    next.startAt = reconnecting ? goodPos : video.currentTime; // same minute
+    save();
+    window.history.back(); // replace the player step instead of adding one
+    setTimeout(function () { play(next); }, 60);
   }
 
   function play(item) {
+    resetRecovery();
     cur = item;
     S.watching((item.live ? 'Live TV: ' : '') + (item.title || ''));
     box.classList.remove('hidden');
@@ -94,7 +224,7 @@
     $('osd-hint').textContent = item.live
       ? 'OK pause · ▲ ▼ change channel · Back exit'
       : 'OK pause · ◀ ▶ 10 s · ▼ buttons · ▲ subtitles · Back exit';
-    var at = item.live ? 0 : S.resumeAt(item.videoId);
+    var at = item.live ? 0 : (item.startAt || S.resumeAt(item.videoId));
     if (hls) { hls.destroy(); hls = null; }
     startSource(item);
     video.onloadedmetadata = function () {
@@ -246,6 +376,7 @@
 
   function close() {
     save();
+    resetRecovery();
     clearInterval(saveTimer);
     video.pause();
     if (hls) { hls.destroy(); hls = null; }
@@ -299,13 +430,19 @@
       if (pf >= 0 && !wasHidden) {
         e.preventDefault();
         if (k === 37) return setBtn(pf === 1 ? 0 : Math.max(1, pf - 1));
-        if (k === 39) return setBtn(pf === 0 ? 2 : Math.min(btns.length - 1, pf + 1));
+        if (k === 39) return setBtn(pf === 0 ? 2 : Math.min(btns.length - ($('lighter-btn').style.display === 'none' ? 2 : 1), pf + 1));
         if (k === 38) return setBtn(pf === 0 ? -1 : 0);
         if (k === 40) return setBtn(pf === 0 ? 2 : -1);
         if (ok) return press(btns[pf].getAttribute('data-a'));
         return;
       }
-      if (ok) { e.preventDefault(); video.paused ? video.play() : video.pause(); return; }
+      if (ok) {
+        e.preventDefault();
+        if (holding) endHold(true);
+        else if (video.paused) video.play();
+        else video.pause();
+        return;
+      }
       if (k === 37 || k === 412) { e.preventDefault(); return seek(-10); }
       if (k === 39 || k === 417) { e.preventDefault(); return seek(10); }
       if (cur && cur.live && (k === 38 || k === 33)) { e.preventDefault(); return zap(-1); }

@@ -715,17 +715,27 @@
       t.appendChild(el('span', 'tag', x.addon || ''));
       return t;
     }
+    var latest = [];
+    function itemFor(x) {
+      var l = S.lighterFile(x, latest);
+      return { url: x.s.url, title: title, type: type, videoId: videoId,
+        subs: x.s.subtitles || [], fileName: ((x.s.behaviorHints || {}).filename) || x.label,
+        lighter: l && {
+          label: (l.q ? l.q + 'p · ' : '') + (l.bytes >= 1e9 ? (l.bytes / 1e9).toFixed(1) + ' GB' : Math.round(l.bytes / 1e6) + ' MB'),
+          item: function () { return itemFor(l); }
+        } };
+    }
     function row(x, label, cls) {
       var s = el('div', 'stream f' + (cls ? ' ' + cls : ''));
       s.appendChild(el('div', 't', (label ? label + ' · ' : '') + x.label));
       s.appendChild(tags(x));
       s.onclick = function () {
-        S.player.play({ url: x.s.url, title: title, type: type, videoId: videoId,
-          subs: x.s.subtitles || [], fileName: ((x.s.behaviorHints || {}).filename) || x.label });
+        S.player.play(itemFor(x));
       };
       return s;
     }
     S.streams(type, videoId, function (all, done) {
+      latest = all;
       var keep = S.focused() && box.contains(S.focused()) ? S.focused().textContent : null;
       box.innerHTML = '';
       head.textContent = all.length ? 'Streams · ' + all.length + (done ? '' : ' (searching…)')

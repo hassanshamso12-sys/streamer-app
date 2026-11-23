@@ -368,19 +368,22 @@
     var tag = DEBRID_TAG.exec(name);
     var q = /2160p|\b4k\b|\buhd\b/.test(text) ? 2160 : /1080[pi]/.test(text) ? 1080 :
       /720p/.test(text) ? 720 : /480p|\bsd\b/.test(text) ? 480 : 0;
-    var size = 0, m = /(?:💾|📦)\s*([\d.,]+)\s*(tb|gb|mb)/i.exec(raw);
+    var size = 0, bytes = 0, m = /(?:💾|📦)\s*([\d.,]+)\s*(tb|gb|mb)/i.exec(raw);
     if (m) {
       var n = parseFloat(m[1].replace(',', '.'));
-      size = n * (m[2].toLowerCase() === 'tb' ? 1048576 : m[2].toLowerCase() === 'gb' ? 1024 : 1);
+      var unit = m[2].toLowerCase();
+      size = n * (unit === 'tb' ? 1048576 : unit === 'gb' ? 1024 : 1);
+      bytes = n * (unit === 'tb' ? 1e12 : unit === 'gb' ? 1e9 : 1e6);
     } else if ((s.behaviorHints || {}).videoSize) {
       size = s.behaviorHints.videoSize / 1048576;
+      bytes = s.behaviorHints.videoSize;
     }
     var ready = tag ? (tag[2] === '+' || tag[2] === '⚡') :
       (/⚡\s*(tb|rd|ad|pm)\b/i.test(name) && !/check cache|⏳/i.test(raw));
     var svc = (tag && tag[1]) || ((/⚡\s*(tb|rd|ad|pm)\b/i.exec(name) || [])[1] || '');
     var arAudio = AR_DUB.test(raw) || AR_AUDIO.test(raw);
     return {
-      s: s, q: q, sizeMb: size,
+      s: s, q: q, sizeMb: size, bytes: bytes,
       service: SERVICES[svc.toUpperCase()] || (svc ? svc.toUpperCase() : 'Debrid'),
       action: !!(tag && tag[2] === '🔄'),
       debrid: !!tag || /⚡\s*(tb|rd|ad|pm)\b/i.test(name) || /\/resolve\//.test(s.url || ''),
@@ -423,6 +426,39 @@
     if (x.mp4) s += 5;
     return s;
   }
+  // A good file under 2 GB that a TV browser can play: recommended before
+  // any bigger file (slow internet). Same idea as StreamItem.isLight.
+  function light(x) {
+    if (x.bytes < 100e6 || x.bytes >= 2e9) return false;
+    if ((x.q !== 720 && x.q !== 1080) || x.cam || x.otherDub) return false;
+    if (x.debrid && !x.ready) return false;
+    if (x.hevc || x.av1 || x.badAudio) return false;
+    return !x.multi || x.arabicAudio;
+  }
+  // A smaller ready file to offer when x keeps stalling (same audio kind).
+  function lighterFile(x, all) {
+    if (!x.bytes) return null;
+    var best = null;
+    all.forEach(function (o) {
+      if (o === x || o.s.url === x.s.url || !o.bytes) return;
+      if (o.bytes < 100e6 || o.bytes > x.bytes * 0.7) return;
+      if (!o.debrid || !o.ready || !light(o)) return;
+      if (x.arabicAudio && !o.arabicAudio) return;
+      if (!best || o.score > best.score) best = o;
+    });
+    return best;
+  }
+  function rankAll(all, lang) {
+    var dubFirst = lang === 'tr' && store('dub_tr') !== false &&
+      all.some(function (x) { return x.arabicAudio; });
+    all.forEach(function (x) {
+      // Ready debrid first (under 2 GB on top), then other light files.
+      var ready = x.debrid && x.ready && !x.cam && !x.av1;
+      x.rank = x.score + (ready ? (x.q === 720 || x.q === 1080 ? 400 : 300) : 0) +
+        (light(x) && (!dubFirst || x.arabicAudio) ? 200 : 0);
+    });
+    all.sort(function (p, q) { return q.rank - p.rank; });
+  }
   // Title's original language from TMDB ("tr", "ar", "en"…), cached.
   var TMDB = 'bfa916aebefd39ca1e7a95b0e92ee8a5';
   function originalLang(id, type) {
@@ -460,7 +496,7 @@
         }).catch(function () {})
         .then(function () {
           left--;
-          all.sort(function (p, q) { return q.score - p.score; });
+          rankAll(all, lang);
           onUpdate(all, left === 0);
         });
     });
@@ -927,6 +963,7 @@
 
   // Exposed for the other script parts (pages, player).
   window.STV = {
+    lighterFile: lighterFile,
     $: $, el: el, store: store, toast: toast, getJson: getJson, fmtTime: fmtTime,
     auth: function () { return auth; }, signIn: signIn, signOut: signOut,
     newLoginCode: newLoginCode, loginCodeStatus: loginCodeStatus, signInWithCode: signInWithCode,
