@@ -330,7 +330,10 @@
     var ex = [];
     if (opts.search) ex.push('search=' + enc(opts.search));
     if (opts.skip) ex.push('skip=' + opts.skip);
-    var url = base(a) + '/catalog/' + enc(c.type) + '/' + enc(c.id) + (ex.length ? '/' + ex.join('&') : '') + '.json';
+    // Aradeb renamed these lists; the old names answer with nothing.
+    var id = c.id;
+    if (a.m && a.m.id === 'org.reptilia.aradeb') id = id.replace(/^new_arabic_(series|movies)$/, 'latest_arabic_$1');
+    var url = base(a) + '/catalog/' + enc(c.type) + '/' + enc(id) + (ex.length ? '/' + ex.join('&') : '') + '.json';
     return getJson(url).then(function (j) {
       return (j.metas || []).map(function (m) { if (!m.type) m.type = c.type; return m; });
     });
