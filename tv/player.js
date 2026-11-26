@@ -36,7 +36,7 @@
   function press(a) {
     showOsd();
     if (a === 'back') return S.back();
-    if (a === 'play') { if (holding) endHold(true); else if (video.paused) video.play(); else video.pause(); return; }
+    if (a === 'play') return togglePlay();
     if (a === 'rew') return seek(-10);
     if (a === 'fwd') return seek(10);
     if (a === 'subs') return openSheet();
@@ -146,26 +146,47 @@
       S.toast('Keeps stopping? A lighter file is ready: ' + cur.lighter.label + '. Press OK to switch.', 7000);
     }
   }
+  // Many TV browsers stop downloading while paused: the wait also ends
+  // once nothing more arrives for 4 s, and never lasts more than 20 s.
   function holdFor(sec) {
     if (holding) return;
     holding = true;
     video.pause();
     $('spinner').classList.remove('hidden');
-    var until = Date.now() + 45000;
+    var until = Date.now() + 20000, grew = Date.now(), last = bufferedEnd();
     clearInterval(holdTimer);
     holdTimer = setInterval(function () {
       if (!cur) return endHold(false);
       if (!video.paused) return endHold(false); // Play was pressed
-      var end = bufferedEnd(), d = video.duration || 0;
-      if (end - video.currentTime >= sec || (d && end >= d - 1) || Date.now() > until) endHold(true);
+      var end = bufferedEnd(), d = video.duration || 0, now = Date.now();
+      if (end > last + 0.2) { last = end; grew = now; }
+      if (end - video.currentTime >= sec || (d && end >= d - 1) || now > until || now - grew >= 4000) endHold(true);
     }, 500);
   }
   function endHold(resume) {
     clearInterval(holdTimer);
     holding = false;
     $('spinner').classList.add('hidden');
-    if (resume && cur) video.play();
+    if (resume && cur) resume_();
   }
+  // Play, ignoring a refusal: the watch below tries again.
+  function resume_() {
+    var p = video.play();
+    if (p && p.catch) p.catch(function () {});
+  }
+  // OK / the play button: the only way playback is meant to stop.
+  function togglePlay() {
+    if (holding) { wantPlay = true; return endHold(true); }
+    if (video.paused) { wantPlay = true; resume_(); } else { wantPlay = false; video.pause(); }
+  }
+  // Some TV browsers stay paused after buffering, or refuse an automatic
+  // play: if you didn't pause, start it again.
+  var wantPlay = false;
+  setInterval(function () {
+    if (!cur || !wantPlay || holding || reconnecting || !video.paused || video.ended) return;
+    if (video.readyState >= 2) resume_();
+  }, 2000);
+  video.addEventListener('ended', function () { wantPlay = false; });
   function reconnect() {
     if (reconnecting || !cur || cur.live) return;
     if (tries >= RETRIES.length) {
@@ -182,7 +203,7 @@
       if (cur !== item) return;
       video.onloadedmetadata = function () {
         video.currentTime = goodPos;
-        video.play();
+        resume_();
       };
       video.src = item.url;
       video.load();
@@ -229,8 +250,9 @@
     startSource(item);
     video.onloadedmetadata = function () {
       if (at && at < video.duration - 60) video.currentTime = at;
-      video.play();
+      resume_();
     };
+    wantPlay = true;
     clearInterval(saveTimer);
     if (item.live) { clearTrack(); return; }
     saveTimer = setInterval(save, 10000);
@@ -438,9 +460,7 @@
       }
       if (ok) {
         e.preventDefault();
-        if (holding) endHold(true);
-        else if (video.paused) video.play();
-        else video.pause();
+        togglePlay();
         return;
       }
       if (k === 37 || k === 412) { e.preventDefault(); return seek(-10); }
