@@ -8,23 +8,27 @@
 * { box-sizing: border-box; }
 html, body { margin: 0; height: 100%; overflow: hidden; background: var(--bg);
   color: var(--text); font-family: "Segoe UI", Roboto, Arial, sans-serif; }
-body { background: linear-gradient(180deg, #1e1909 0%, #0a0906 55%, #050402 100%); }
+body { background: #0a0906; }
 .hidden { display: none !important; }
 
 /* Side menu: icons centred top to bottom, sized to the screen */
-#menu { position: fixed; left: 0; top: 0; bottom: 0; width: 7.5vw; z-index: 5;
+/* Like Netflix: a black strip, small outline icons; the page you're on is
+   white with a gold line under it, the rest dimmed. */
+#menu { position: fixed; left: 0; top: 0; bottom: 0; width: 6vw; z-index: 5;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
-  background: linear-gradient(90deg, rgba(5,4,2,.96), rgba(5,4,2,0)); }
-#menu .logo { position: absolute; top: 3.2vh; color: var(--gold); font-size: 2.6vw; }
-#menu .item { width: 4.2vw; height: 4.2vw; border-radius: 50%; margin: 1.1vw 0;
+  background: linear-gradient(90deg, rgba(0,0,0,.95) 0%, rgba(0,0,0,.8) 60%, rgba(0,0,0,0) 100%); }
+#menu .logo { position: absolute; top: 3.2vh; color: var(--gold); font-size: 2vw; }
+#menu .item { width: 3.6vw; height: 3.6vw; margin: .6vw 0; position: relative;
   display: flex; align-items: center; justify-content: center;
-  background: rgba(255,255,255,.08); color: var(--text); }
-#menu .item svg { width: 2.1vw; height: 2.1vw; }
-#menu .item.on { background: rgba(138,98,16,.85); }
+  background: none; color: rgba(255,255,255,.5); }
+#menu .item svg { width: 1.7vw; height: 1.7vw; }
+#menu .item.on { color: #fff; }
+#menu .item.on:after { content: ""; position: absolute; left: 50%; bottom: .2vw; width: 1.3vw;
+  margin-left: -.65vw; height: .2vw; border-radius: .1vw; background: var(--gold); }
 #menu .label { display: none; }
 
 /* Pages */
-#page { position: absolute; left: 7.5vw; right: 0; top: 0; bottom: 0; overflow: hidden; }
+#page { position: absolute; left: 6vw; right: 0; top: 0; bottom: 0; overflow: hidden; }
 .scroll { position: absolute; left: 0; right: 0; top: 0; bottom: 0; overflow: hidden; }
 .pad { padding: 4vh 3vw 14vh 2vw; }
 h1 { font-size: 2.9vw; margin: 0 0 1.4vw; letter-spacing: -1px; }
@@ -33,16 +37,26 @@ h2 { font-size: 1.7vw; margin: 2vw 0 1vw; }
 body { font-size: 1.25vw; }
 
 /* Hero (focused title) */
-#hero { height: 46vh; position: relative; padding: 6vh 0 0 2vw; }
-#hero-bg { position: absolute; left: 0; right: 0; top: 0; height: 100%;
-  background-size: cover; background-position: center 20%; }
+#hero { height: 50vh; position: relative; padding: 5vh 0 0 2.4vw; }
+/* Full colour on the right; each new picture fades in over the last. */
+#hero-bg { position: absolute; left: 0; right: 0; top: 0; height: 125%; }
+#hero-bg .hbg { position: absolute; left: 0; top: 0; right: 0; bottom: 0; opacity: 0;
+  background-size: cover; background-position: center 20%; transition: opacity .6s; }
+#hero-bg .hbg.in { opacity: 1; }
 /* Darker on the left (behind the text) and at the bottom (behind the rows),
    so text stays readable while the picture fills the whole area. */
 #hero-bg:after { content: ""; position: absolute; left: 0; top: 0; right: 0; bottom: 0;
-  background: linear-gradient(90deg, rgba(10,9,6,.92) 0%, rgba(10,9,6,.6) 32%, rgba(10,9,6,.1) 62%, rgba(10,9,6,0) 100%),
-              linear-gradient(0deg, #0a0906 0%, rgba(10,9,6,0) 40%); }
-#hero-info { position: relative; width: 46%; }
-#hero-title { font-size: 3.3vw; font-weight: 900; line-height: 1.05; margin-bottom: 1vw; }
+  background: linear-gradient(90deg, #0a0906 0%, #0a0906 12%, rgba(10,9,6,.85) 32%, rgba(10,9,6,.2) 60%, rgba(10,9,6,0) 82%),
+              linear-gradient(0deg, #0a0906 0%, rgba(10,9,6,.7) 25%, rgba(10,9,6,0) 60%); }
+#hero-info { position: relative; width: 46%; transition: opacity .35s, transform .35s; }
+#hero-info.fade { opacity: 0; transform: translateY(.6vw); }
+#hero-title { font-size: 3.6vw; font-weight: 900; line-height: 1.02; margin-bottom: .9vw;
+  letter-spacing: -.1vw; text-shadow: 0 .15vw 1.2vw rgba(0,0,0,.8); }
+#hero-info .desc { color: #ededed; text-shadow: 0 .1vw .8vw rgba(0,0,0,.8); max-height: 3.6vw; }
+.hbtns { margin-top: 1.1vw; }
+.hbtn { display: inline-block; padding: .45vw 1.1vw .45vw .8vw; border-radius: .35vw; margin-right: .8vw;
+  font-size: 1.05vw; font-weight: 700; background: rgba(109,109,109,.55); color: #fff; }
+.hbtn.light { background: #fff; color: #000; }
 #hero-logo { max-height: 7vw; max-width: 26vw; margin-bottom: 1vw; display: block; }
 .meta-line { font-weight: 700; color: #e3e8f7; margin-bottom: .8vw; font-size: 1.3vw; }
 .meta-line span { margin-right: 1.1vw; }
@@ -50,7 +64,7 @@ body { font-size: 1.25vw; }
 .imdb { background: #f5c518; color: #000; border-radius: 4px; padding: 1px 6px; font-weight: 900; }
 
 /* Rows of posters */
-.rows { position: absolute; left: 0; right: 0; top: 46vh; bottom: 0; overflow: hidden; }
+.rows { position: absolute; left: 0; right: 0; top: 50vh; bottom: 0; overflow: hidden; }
 .row { margin: 0 0 .6vw 2vw; }
 .row-title { font-size: 1.55vw; font-weight: 800; margin: .8vw 0 .5vw; }
 .row-title small { color: var(--muted); font-weight: 600; font-size: 1.15vw; margin-left: .6vw; }
@@ -71,8 +85,7 @@ body { font-size: 1.25vw; }
 /* Focus: gold ring, slightly larger */
 .f { outline: none; transition: transform .12s; }
 .f.focus { transform: scale(1.08); box-shadow: 0 0 0 4px var(--gold), 0 8px 26px rgba(217,162,27,.35); }
-#menu .item.focus { transform: scale(1.12); background: linear-gradient(135deg,#d9a21b,#a9780f 55%,#6e4d08);
-  color: var(--on-gold); box-shadow: 0 0 22px rgba(217,162,27,.7); }
+#menu .item.focus { transform: scale(1.22); background: none; color: #fff; box-shadow: none; }
 
 /* Buttons, inputs */
 .btn { display: inline-block; padding: 1vw 1.8vw; border-radius: .9vw; margin: 0 .9vw .9vw 0;
@@ -214,3 +227,15 @@ input.f.focus { border-color: var(--gold); transform: none; box-shadow: none; }
   padding: 1.6vw 2vw; margin: 1.6vw 0; }
 .blocked .cmsg { font-size: 1.6vw; margin-bottom: .8vw; }
 .blocked .cline { font-size: 2.2vw; font-weight: 800; color: var(--gold2); margin-top: .5vw; }
+
+/* Wide cards (Continue Watching) with a progress bar */
+.card.wide { width: 17vw; height: 9.6vw; background-size: cover; background-position: center; }
+.card .bar { position: absolute; left: 0; right: 0; bottom: 0; height: .3vw; background: rgba(0,0,0,.55); }
+.card .bar i { display: block; height: 100%; background: #e5484d; }
+/* The card the remote is on shows its name (wide cards always do) */
+.card .cname { display: none; position: absolute; left: 0; right: 0; bottom: 0;
+  padding: 2.4vw .6vw .6vw; border-radius: 0 0 .8vw .8vw; font-size: .95vw; font-weight: 800;
+  line-height: 1.2; background: linear-gradient(0deg, rgba(0,0,0,.92), rgba(0,0,0,0)); }
+.card .cname small { display: block; color: #ccc; font-weight: 600; font-size: .8vw; }
+.card.focus .cname, .card.wide .cname { display: block; }
+.card.wide .cname { padding-bottom: .9vw; }

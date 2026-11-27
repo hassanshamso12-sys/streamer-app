@@ -269,6 +269,14 @@
     var k = 'pos:' + activeProfile().id + ':' + videoId;
     if (sec < 30 || (total && sec > total - 120)) store(k, null);
     else store(k, Math.round(sec * 1000));
+    if (total) store('dur:' + activeProfile().id + ':' + videoId, Math.round(total * 1000));
+  }
+  // How far you got (0 to 1), for Continue Watching; 0 when unknown.
+  function progressOf(videoId) {
+    var pos = resumeAt(videoId);
+    var d = store('dur:' + activeProfile().id + ':' + videoId) ||
+      (profileData().progress || {})['dur:addon:' + videoId];
+    return pos && d ? pos / (d / 1000) : 0;
   }
 
   // ---------- Addons ----------
@@ -978,7 +986,7 @@
     member: function () { return member; }, contact: function () { return contact; },
     data: function () { return data; },
     profiles: profiles, activeProfile: activeProfile, myList: myList, recent: recent,
-    resumeAt: resumeAt, saveResume: saveResume,
+    resumeAt: resumeAt, saveResume: saveResume, progressOf: progressOf,
     addons: addons, ensureManifests: ensureManifests, browsable: browsable,
     searchable: searchable, onHome: onHome, catalog: catalog, meta: meta,
     typeLabel: typeLabel, streams: streams, findSubtitles: findSubtitles,

@@ -8,11 +8,11 @@
   var ICONS = {
     back: '<path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>',
     search: '<circle cx="10.5" cy="10.5" r="6" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="M15 15l5 5" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/>',
-    home: '<path d="M4 11l8-7 8 7v9h-5v-6H9v6H4z" fill="currentColor"/>',
-    list: '<path d="M6 3h12v18l-6-4-6 4z" fill="currentColor"/>',
+    home: '<path d="M4 11l8-7 8 7v9h-5v-6H9v6H4z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>',
+    list: '<path d="M6 3h12v18l-6-4-6 4z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>',
     live: '<rect x="3" y="6" width="18" height="13" rx="2.5" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M8 3l4 3 4-3" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M10 10v5l4-2.5z" fill="currentColor"/>',
-    genres: '<rect x="3" y="3" width="8" height="8" rx="2" fill="currentColor"/><rect x="13" y="3" width="8" height="8" rx="2" fill="currentColor"/><rect x="3" y="13" width="8" height="8" rx="2" fill="currentColor"/><rect x="13" y="13" width="8" height="8" rx="2" fill="currentColor"/>',
-    account: '<circle cx="12" cy="8" r="4.2" fill="currentColor"/><path d="M4 21c1-5 4.5-7 8-7s7 2 8 7z" fill="currentColor"/>'
+    genres: '<g fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.5"/></g>',
+    account: '<g fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="10" r="3.2"/><path d="M6.5 18.5c1.4-2.3 3.3-3.3 5.5-3.3s4.1 1 5.5 3.3"/></g>'
   };
   function icon(name) {
     return '<svg viewBox="0 0 24 24">' + ICONS[name] + '</svg>';
@@ -57,8 +57,13 @@
     var c = el('div', 'card f');
     c.setAttribute('data-id', m.id);
     if (S.dubListed(m.id)) c.appendChild(el('div', 'dub', 'مدبلج'));
-    if (m.poster) c.style.backgroundImage = 'url("' + m.poster + '")';
-    else c.appendChild(el('div', 'name', m.name || ''));
+    if (m.poster) {
+      c.style.backgroundImage = 'url("' + m.poster + '")';
+      // Name shown on the card the remote is on.
+      var n = el('div', 'cname', m.name || '');
+      if (m.releaseInfo) n.appendChild(el('small', '', m.releaseInfo));
+      c.appendChild(n);
+    } else c.appendChild(el('div', 'name', m.name || ''));
     c.onclick = function () { onOpen(m); };
     return c;
   }
@@ -151,10 +156,22 @@
     var rows = el('div', 'rows');
     root.appendChild(hero); root.appendChild(rows);
     var timer = 0;
+    var saved = {};
+    S.myList().forEach(function (e) { saved[e.id] = true; });
     function preview(m) {
       clearTimeout(timer);
       timer = setTimeout(function () {
-        bg.style.backgroundImage = m.background ? 'url("' + m.background + '")' : '';
+        // The new picture fades in over the old one.
+        var url = m.background || m.poster;
+        var layer = el('div', 'hbg');
+        if (url) layer.style.backgroundImage = 'url("' + url + '")';
+        bg.appendChild(layer);
+        void layer.offsetWidth;
+        layer.className = 'hbg in';
+        var old = [].slice.call(bg.children, 0, -1);
+        setTimeout(function () { old.forEach(function (o) { if (o.parentNode) o.parentNode.removeChild(o); }); }, 700);
+        // The text glides in.
+        inf.className = 'fade';
         inf.innerHTML = '';
         // The name shows right away; the logo replaces it once it has loaded.
         var t = el('div', '', m.name); t.id = 'hero-title'; inf.appendChild(t);
@@ -174,7 +191,41 @@
         if (m.imdbRating) { var i = el('span'); i.appendChild(el('span', 'imdb', 'IMDb')); i.appendChild(document.createTextNode(' ' + m.imdbRating)); line.appendChild(i); }
         inf.appendChild(line);
         if (m.description) inf.appendChild(el('div', 'desc', m.description));
+        var btns = el('div', 'hbtns');
+        btns.appendChild(el('span', 'hbtn light', '▶  OK  Open'));
+        if (saved[m.id]) btns.appendChild(el('span', 'hbtn', '✓  In My List'));
+        inf.appendChild(btns);
+        setTimeout(function () { inf.className = ''; }, 30);
       }, 150);
+    }
+    // Continue Watching: wide pictures with how far you got.
+    function addContinue() {
+      var list = S.recent();
+      if (!list.length) return;
+      var r = el('div', 'row');
+      r.appendChild(el('div', 'row-title', 'Continue Watching'));
+      var strip = el('div', 'strip');
+      list.slice(0, 20).forEach(function (e) {
+        var m = e.item, c = el('div', 'card wide f');
+        c.setAttribute('data-id', m.id);
+        var url = m.background || m.poster;
+        if (url) c.style.backgroundImage = 'url("' + url + '")';
+        var n = el('div', 'cname', m.name || '');
+        if (e.label) n.appendChild(el('small', '', e.label));
+        c.appendChild(n);
+        var frac = S.progressOf(e.videoId);
+        if (frac > 0) {
+          var bar = el('div', 'bar'), fill = el('i');
+          fill.style.width = Math.round(Math.min(frac, 1) * 100) + '%';
+          bar.appendChild(fill); c.appendChild(bar);
+        }
+        c.onclick = function () { openTitle(m, m.addonUrl); };
+        c.onfocusitem = function () { preview(m); };
+        strip.appendChild(c);
+      });
+      r.appendChild(strip);
+      rows.insertBefore(r, genreRow);
+      if (first) { first = false; S.focusFirst(rows); }
     }
     var first = true;
     function addRow(title, sub, items, from, onMore) {
@@ -211,6 +262,7 @@
     rows.appendChild(regionRow);
     // My List first (it's yours), then each addon's rows in order.
     var mine = S.myList().map(function (e) { return { id: e.id, type: e.type, name: e.name, poster: e.poster, background: e.background, releaseInfo: e.releaseInfo }; });
+    addContinue();
     addRow('My List', '', mine.slice(0, 30), null);
     S.ensureManifests().then(function () {
       S.addons().forEach(function (a) {
